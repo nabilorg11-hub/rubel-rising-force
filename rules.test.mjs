@@ -1,0 +1,7 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {WEAPONS,MISSIONS,parseSave,circleBlocked} from '../src/rules.mjs';
+test('corrupt and hostile save values cannot break campaign unlocks',()=>{for(const raw of [null,'bad','null','[]','{"unlocked":99,"best":-7}']){const s=parseSave(raw);assert.ok(s.unlocked>=1&&s.unlocked<=3);assert.ok(s.best>=0)}assert.equal(parseSave('{"unlocked":2,"best":420}').unlocked,2)});
+test('collision blocks world boundary and expanded obstacle edges',()=>{const b=[{x:0,z:0,w:4,d:2}];assert.equal(circleBlocked(2.3,0,.5,b),true);assert.equal(circleBlocked(3,0,.5,b),false);assert.equal(circleBlocked(29,10,.5,b),true);assert.equal(circleBlocked(0,5,.5,b),false)});
+test('four weapons have distinct behavior and enough initial ammo for first mission',()=>{assert.equal(WEAPONS.length,4);assert.equal(new Set(WEAPONS.map(w=>w.rate)).size,4);for(const w of WEAPONS){assert.ok(w.mag>0&&w.reserve>0&&w.reload>0&&w.damage>0)}assert.equal(WEAPONS[1].pellets,7);assert.ok(WEAPONS[2].range>WEAPONS[1].range);const waves=MISSIONS[0];const hpBudget=Array.from({length:waves.waves},(_,i)=>(waves.count+i)*230).reduce((a,b)=>a+b);assert.ok(WEAPONS.reduce((n,w)=>n+(w.mag+w.reserve)*w.damage*w.pellets,0)>hpBudget)});
+test('campaign has finite escalating wave counts',()=>{assert.equal(MISSIONS.length,3);const counts=MISSIONS.map(m=>m.waves*m.count+m.waves*(m.waves-1)/2);assert.ok(counts[0]<counts[1]&&counts[1]<counts[2])});
